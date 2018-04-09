@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -81,7 +79,6 @@ public class FirstPersonMovement : MonoBehaviour
 
         if (m_movementMode == MovementMode.NORMAL)
         {
-            movement.y = m_rigidbody.velocity.y;
             movement += transform.forward * Input.GetAxisRaw(m_verticalAxisInput);
         }
 
