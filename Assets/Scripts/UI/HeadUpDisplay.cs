@@ -36,15 +36,13 @@ public class HeadUpDisplay : MonoBehaviour
 
     private void ListenToEvents()
     {
-        Grabber.CanGrabEvent.AddListener(OnCanInteract);
-        Grabber.GrabEvent.AddListener(OnInteract);
-        Grabber.DropEvent.AddListener(OnInteract);
-        Grabber.ThrowEvent.AddListener(OnInteract);
-        Grabber.IsGrabbingEvent.AddListener(OnIsInteracting);
+        GrabbableInteraction.InteractEvent.AddListener(OnInteract);
+        GrabbableInteraction.CanInteractEvent.AddListener(OnCanInteract);
+        GrabbableInteraction.CannotInteractEvent.AddListener(OnCannotInteract);
 
-        DoorInteraction.CanInteractWithDoorEvent.AddListener(OnCanInteract);
-        DoorInteraction.CannotInteractWithDoorEvent.AddListener(OnCannotInteract);
-        DoorInteraction.InteractWithDoorEvent.AddListener(OnInteract);
+        DoorInteraction.InteractEvent.AddListener(OnInteract);
+        DoorInteraction.CanInteractEvent.AddListener(OnCanInteract);
+        DoorInteraction.CannotInteractEvent.AddListener(OnCannotInteract);
     }
 
     private static uint GetPriority(InteractionState p_state)

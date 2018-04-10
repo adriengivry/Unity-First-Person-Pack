@@ -14,7 +14,13 @@ public class FirstPersonCamera : MonoBehaviour
 
     private Vector2 m_mouseLook;
     private Vector2 m_verticalSmooth;
-    private Quaternion m_parentInitialRotation;
+    private Quaternion m_initialRotation;
+    private Camera m_camera;
+
+    private void Awake()
+    {
+        m_camera = GetComponentInChildren<Camera>();
+    }
 
     private void LockCursor()
     {
@@ -45,7 +51,7 @@ public class FirstPersonCamera : MonoBehaviour
     {
         LockCursor();
 
-        m_parentInitialRotation = transform.parent.rotation;
+        m_initialRotation = transform.rotation;
     }
 
     private void Update()
@@ -56,13 +62,13 @@ public class FirstPersonCamera : MonoBehaviour
         UpdateMouseLook();
 
         // Set the up/down rotation of the camera in function of the mouseLook variable
-        transform.localRotation = Quaternion.AngleAxis(-m_mouseLook.y, Vector3.right);
+        m_camera.transform.localRotation = Quaternion.AngleAxis(-m_mouseLook.y, Vector3.right);
 
         /*
          * Set the left/right rotation on the parent of the camera in function of the mouseLook variable.
          * We modify the parent instead of the camera gameObject in order to modify the forward vector of the gameObject.
          * This way, when you'll press the forward key, you'll move in the mouseLook direction
          */
-        transform.parent.rotation = m_parentInitialRotation * Quaternion.AngleAxis(m_mouseLook.x, transform.parent.up);
+        transform.rotation = m_initialRotation * Quaternion.AngleAxis(m_mouseLook.x, transform.up);
     }
 }

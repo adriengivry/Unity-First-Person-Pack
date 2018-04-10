@@ -9,7 +9,7 @@ public class Detector : MonoBehaviour
     public class GameObjectEvent : UnityEvent<GameObject> {}
     public class DetectionEvent : UnityEvent<GameObject, float> { }
 
-    public DetectionEvent ObjectFound = new DetectionEvent();
+    public DetectionEvent ObjectFoundEvent = new DetectionEvent();
 
     private void Update()
     {
@@ -23,7 +23,7 @@ public class Detector : MonoBehaviour
             Vector3 cameraPosition = Camera.main.transform.position;
             Vector3 detectedHitClosestPoint = detectedCollider.ClosestPointOnBounds(cameraPosition);
             float distanceToCollision = Vector3.Distance(cameraPosition, detectedHitClosestPoint);
-            ObjectFound.Invoke(hit.transform.gameObject, distanceToCollision);
+            ObjectFoundEvent.Invoke(hit.transform.gameObject, distanceToCollision);
         }
     }
 }

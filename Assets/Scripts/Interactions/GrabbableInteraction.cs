@@ -6,25 +6,17 @@ using UnityEngine.Events;
 /*
  * A script to put on a Player to allow him to grab and throw objects (First person needed)
  */
-public class Grabber : MonoBehaviour
+public class GrabbableInteraction : AInteraction<Grabbable>
 {
-    public static UnityEvent CanGrabEvent = new UnityEvent();
-    public static UnityEvent GrabEvent = new UnityEvent();
-    public static UnityEvent DropEvent = new UnityEvent();
-    public static UnityEvent ThrowEvent = new UnityEvent();
-    public static UnityEvent IsGrabbingEvent = new UnityEvent();
-
-    [Header("INPUT BINDING")]
-    [SerializeField] private string m_grabInput;
+    [Header("OTHER INPUTS")]
     [SerializeField] private string m_dropInput;
     [SerializeField] private string m_throwInput;
 
-    [Header("GLOBAL PARAMETERS")]
-    [SerializeField] private float m_minimumDistanceToGrab;
-    [SerializeField] private float m_objectPositionSmoothing;
-    [SerializeField] private float m_objectRotationSmoothing;
+    [Header("SMOOTHING")]
+    [Range(0, 1)] [SerializeField] private float m_objectPositionSmoothing;
+    [Range(0, 1)] [SerializeField] private float m_objectRotationSmoothing;
 
-    [Header("THROW PARAMETERS")]
+    [Header("THROW")]
     [SerializeField] private float m_throwStrength;
 
     private GameObject m_grabbedObject;
@@ -38,17 +30,10 @@ public class Grabber : MonoBehaviour
 
     private bool m_grabbedDuringThisFrame;
 
-    private void Awake()
-    {
-        GetComponent<Detector>().ObjectFound.AddListener(OnDetection);
-    }
-
     private void Update()
     {
         if (m_grabbedObject != null)
         {
-            IsGrabbingEvent.Invoke();
-
             UpdateGrabbedObject();
 
             if (!m_grabbedDuringThisFrame)
@@ -63,23 +48,16 @@ public class Grabber : MonoBehaviour
         m_grabbedDuringThisFrame = false;
     }
 
-    private void OnDetection(GameObject p_detected, float p_distanceTo)
+    protected override bool CanInteract(GameObject p_target)
     {
-        if (m_grabbedObject == null)
-        {
-            Grabbable p_grabbable = p_detected.GetComponent<Grabbable>();
-
-            if (p_grabbable != null && p_distanceTo <= m_minimumDistanceToGrab)
-            {
-                CanGrabEvent.Invoke();
-
-                if (Input.GetButtonDown(m_grabInput))
-                {
-                    GrabObject(p_detected);
-                }
-            }
-        }
+        return true;
     }
+
+    protected override void Interact(GameObject p_target)
+    {
+        Grab(p_target);
+    }
+
 
     private void UpdateGrabbedObject()
     {
@@ -95,9 +73,9 @@ public class Grabber : MonoBehaviour
             DropObject();
     }
 
-    private void GrabObject(GameObject p_toGrab)
+    private void Grab(GameObject p_toGrab)
     {
-        GrabEvent.Invoke();
+        InteractEvent.Invoke();
         m_grabbedObject = p_toGrab;
         m_grabbedObjectScript = m_grabbedObject.GetComponent<Grabbable>();
 
@@ -113,10 +91,7 @@ public class Grabber : MonoBehaviour
 
     private void ThrowObject(float p_strength)
     {
-        if (p_strength > 0)
-            ThrowEvent.Invoke();
-        else
-            DropEvent.Invoke();
+        InteractEvent.Invoke();
 
         m_grabbedObjectScript.Drop(gameObject);
         m_grabbedObjectScript.Throw(p_strength);

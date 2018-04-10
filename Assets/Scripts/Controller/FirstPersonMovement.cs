@@ -47,6 +47,7 @@ public class FirstPersonMovement : MonoBehaviour
     private float m_distanceToGround;
     private float m_jumpDelay;
     private bool m_grounded;
+    private bool m_running;
     private float m_secondsSinceNotGrounded;
     private bool m_doubleJumped;
 
@@ -58,19 +59,42 @@ public class FirstPersonMovement : MonoBehaviour
 
         m_distanceToGround = GetComponent<Collider>().bounds.extents.y;
 
-        if (m_movementMode == MovementMode.FLYING)
-        {
-            m_rigidbody.useGravity = false;
-        }
+        SetMovementMode(m_movementMode);
     }
 
     private void Update()
     {
+        UpdateRun();
         UpdateGrounded();
         HandleMoveInput();
         HandleJumpInput();
     }
-    
+
+    private void SetMovementMode(MovementMode p_newMode)
+    {
+        m_movementMode = p_newMode;
+
+        if (m_movementMode == MovementMode.FLYING)
+        {
+            m_rigidbody.useGravity = false;
+        }
+        else
+        {
+            m_rigidbody.useGravity = true;
+        }
+    }
+
+    private void ToggleMode()
+    {
+        if (m_movementMode == MovementMode.FLYING)
+        {
+            SetMovementMode(MovementMode.NORMAL);
+        }
+        else if (m_movementMode == MovementMode.NORMAL)
+        {
+            SetMovementMode(MovementMode.FLYING);
+        }
+    }
     private void HandleMoveInput()
     {
         Vector3 movement = new Vector3();
@@ -89,7 +113,7 @@ public class FirstPersonMovement : MonoBehaviour
         }
 
         movement.Normalize();
-        movement *= IsRunning() ? m_runSpeed : m_walkSpeed;
+        movement *= m_running ? m_runSpeed : m_walkSpeed;
 
         Vector3 smoothMovement = Vector3.SmoothDamp(m_rigidbody.velocity, movement, ref m_velocity, m_smoothing);
 
@@ -143,8 +167,11 @@ public class FirstPersonMovement : MonoBehaviour
         }
     }
 
-    private bool IsRunning()
+    private void UpdateRun()
     {
-        return Input.GetButton(m_runInput);
+        if (!Input.GetButton(m_runInput))
+            m_running = false;
+        else if (m_grounded)
+            m_running = true;
     }
 }

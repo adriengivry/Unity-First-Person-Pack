@@ -5,7 +5,7 @@ using UnityEngine;
 /*
  * A script to place on any Grabbable object
  */ 
-public class Grabbable : MonoBehaviour
+public class Grabbable : AInteractable
 {
     [Header("PARAMATERS TO CONSIDER WHEN GRABBED")]
     [SerializeField] private bool m_throwable = true;
