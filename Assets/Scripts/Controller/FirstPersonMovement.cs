@@ -1,9 +1,5 @@
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 /*
  * Here is a simple first person movement controller that helps you to move into your level.
  * You must add this script on your first person character
@@ -25,6 +21,8 @@ public class FirstPersonMovement : MonoBehaviour
 
     [Header("MOVEMENT PARAMETERS")]
     [SerializeField] private MovementMode m_movementMode;
+    [SerializeField] private bool m_allowSwitchingModeAtRuntime;
+    [SerializeField] private bool m_canRun;
     [SerializeField] private float m_walkSpeed;
     [SerializeField] private float m_runSpeed;
     [SerializeField] private float m_smoothing;
@@ -33,7 +31,6 @@ public class FirstPersonMovement : MonoBehaviour
     [SerializeField] private JumpMode m_jumpMode;
     [SerializeField] private float m_jumpStrength;
     [SerializeField] private float m_doubleJumpStrength;
-    [SerializeField] private float m_allowJumpDuringFallInSeconds;
 
     [Header("INPUT BINDING")]
     [SerializeField] private string m_verticalAxisInput;
@@ -41,33 +38,57 @@ public class FirstPersonMovement : MonoBehaviour
     [SerializeField] private string m_upAxisInput;
     [SerializeField] private string m_runInput;
     [SerializeField] private string m_jumpInput;
+    [SerializeField] private string m_switchingModeInput;
 
+    private Detector m_detector;
     private Rigidbody m_rigidbody;
     private Vector3 m_velocity;
-    private float m_distanceToGround;
-    private float m_jumpDelay;
     private bool m_grounded;
     private bool m_running;
-    private float m_secondsSinceNotGrounded;
+    private bool m_jumped;
     private bool m_doubleJumped;
 
     private void Awake()
     {
         m_rigidbody = GetComponent<Rigidbody>();
-        if (m_rigidbody)
-            m_rigidbody.freezeRotation = true;
+        m_detector = GetComponent<Detector>();
+    }
 
-        m_distanceToGround = GetComponent<Collider>().bounds.extents.y;
-
+    private void Start()
+    {
+        ListenToDetector();
         SetMovementMode(m_movementMode);
+        m_rigidbody.freezeRotation = true;
     }
 
     private void Update()
     {
         UpdateRun();
-        UpdateGrounded();
         HandleMoveInput();
         HandleJumpInput();
+        HandleModeSwitch();
+    }
+
+    private void ListenToDetector()
+    {
+        m_detector.GroundedEvent.AddListener(OnGrounded);
+        m_detector.NotGroundedEvent.AddListener(OnNotGrounded);
+    }
+
+    private void OnGrounded()
+    {
+        if (!m_grounded)
+        {
+            m_grounded = true;
+            m_doubleJumped = false;
+            m_jumped = false;
+        }
+    }
+
+    private void OnNotGrounded()
+    {
+        if (m_grounded)
+            m_grounded = false;
     }
 
     private void SetMovementMode(MovementMode p_newMode)
@@ -127,15 +148,14 @@ public class FirstPersonMovement : MonoBehaviour
     {
         if (m_jumpMode == JumpMode.SINGLE || m_jumpMode == JumpMode.DOUBLE)
         {
-            m_jumpDelay += Time.deltaTime;
-
             if (m_movementMode == MovementMode.NORMAL && Input.GetButtonDown(m_jumpInput))
             {
-                if (m_grounded || m_secondsSinceNotGrounded <= m_allowJumpDuringFallInSeconds)
+                if (m_grounded)
                 {
                     Jump(m_jumpStrength);
+                    m_jumped = true;
                 }
-                else if (!m_doubleJumped && m_jumpMode == JumpMode.DOUBLE)
+                else if (!m_doubleJumped && m_jumped && m_jumpMode == JumpMode.DOUBLE)
                 {
                     Jump(m_doubleJumpStrength);
                     m_doubleJumped = true;
@@ -144,34 +164,22 @@ public class FirstPersonMovement : MonoBehaviour
         }
     }
 
-    private void Jump(float p_strength)
+    private void HandleModeSwitch()
     {
-        m_rigidbody.velocity.Scale(new Vector3(1.0f, 0.0f, 1.0f));
-        m_rigidbody.velocity += transform.up * p_strength;
+        if (m_allowSwitchingModeAtRuntime && Input.GetButtonDown(m_switchingModeInput))
+            ToggleMode();
     }
 
-    private void UpdateGrounded()
+    private void Jump(float p_strength)
     {
-        m_grounded = false;
-
-        if (Physics.Raycast(transform.position, -Vector3.up, m_distanceToGround + 0.1f))
-        {
-            m_doubleJumped = false;
-            m_grounded = true;
-            m_secondsSinceNotGrounded = 0.0f;
-        }
-        else
-        {
-            m_secondsSinceNotGrounded += Time.deltaTime;
-            m_grounded = false;
-        }
+        m_rigidbody.velocity = new Vector3(m_rigidbody.velocity.x, p_strength, m_rigidbody.velocity.z);
     }
 
     private void UpdateRun()
     {
         if (!Input.GetButton(m_runInput))
             m_running = false;
-        else if (m_grounded)
+        else if (m_grounded && m_canRun)
             m_running = true;
     }
 }

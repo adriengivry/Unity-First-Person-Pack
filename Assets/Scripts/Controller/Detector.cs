@@ -5,13 +5,29 @@ using UnityEngine.Events;
 
 public class Detector : MonoBehaviour
 {
-    [System.Serializable]
     public class GameObjectEvent : UnityEvent<GameObject> {}
     public class DetectionEvent : UnityEvent<GameObject, float> { }
 
-    public DetectionEvent ObjectFoundEvent = new DetectionEvent();
+    private Collider m_collider;
+    private float m_distanceToGround;
+
+    [HideInInspector] public DetectionEvent ObjectFoundEvent = new DetectionEvent();
+    [HideInInspector] public UnityEvent GroundedEvent = new UnityEvent();
+    [HideInInspector] public UnityEvent NotGroundedEvent = new UnityEvent();
+
+    private void Awake()
+    {
+        m_collider = GetComponent<Collider>();
+        m_distanceToGround = m_collider.bounds.extents.y;
+    }
 
     private void Update()
+    {
+        FrontCheck();
+        GroundCheck();
+    }
+
+    private void FrontCheck()
     {
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -25,5 +41,24 @@ public class Detector : MonoBehaviour
             float distanceToCollision = Vector3.Distance(cameraPosition, detectedHitClosestPoint);
             ObjectFoundEvent.Invoke(hit.transform.gameObject, distanceToCollision);
         }
+    }
+
+    private void GroundCheck()
+    {
+        Vector3 colliderEnd = transform.position + Vector3.down * m_distanceToGround;
+        Vector3 groundedOffset = transform.position + Vector3.down * (m_distanceToGround + 0.05f);
+        float colliderScaledWidth = m_collider.bounds.extents.x * 0.8f;
+        uint collisions = 0;
+
+        Collider[] hits = Physics.OverlapCapsule(colliderEnd, groundedOffset, colliderScaledWidth);
+
+        foreach (Collider hit in hits)
+            if (hit.tag != gameObject.tag)
+                ++collisions;
+
+        if (collisions > 0)
+            GroundedEvent.Invoke();
+        else
+            NotGroundedEvent.Invoke();
     }
 }
